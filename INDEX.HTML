@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Convierte PDFs digitales, escaneados e híbridos en Markdown limpio y estructurado para Obsidian, NotebookLM, LangChain, GitHub, RAG y sistemas IA." />
+  <title>PDF2MD AI — Conversor PDF a Markdown</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== Design tokens ===== */
+    :root {
+      --bg-body: #f0f2f8;
+      --bg-header: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --bg-card: rgba(255, 255, 255, 0.82);
+      --bg-card-border: rgba(148, 163, 184, 0.22);
+      --bg-input: #f8fafc;
+      --bg-input-border: #d1d5db;
+      --bg-note: #eef2ff;
+      --bg-note-border: #c7d2fe;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #6b7280;
+      --text-header: #f9fafb;
+      --text-header-sub: #cbd5e1;
+      --text-note: #3730a3;
+      --accent-1: #6366f1;
+      --accent-2: #2563eb;
+      --gradient-btn: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+      --gradient-progress: linear-gradient(90deg, #34d399 0%, #3b82f6 100%);
+      --gradient-progress-main: linear-gradient(90deg, #2563eb 0%, #6366f1 100%);
+      --shadow-card: 0 8px 32px rgba(15, 23, 42, 0.08);
+      --shadow-btn: 0 8px 24px rgba(79, 70, 229, 0.22);
+      --shadow-header: 0 10px 40px rgba(15, 23, 42, 0.18);
+      --radius-card: 20px;
+      --radius-input: 14px;
+      --radius-btn: 14px;
+      --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --transition-fast: 0.18s ease;
+      --transition-med: 0.3s ease;
+    }
+
+    [data-theme="dark"] {
+      --bg-body: #0b0f1a;
+      --bg-header: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+      --bg-card: rgba(30, 41, 59, 0.72);
+      --bg-card-border: rgba(100, 116, 139, 0.28);
+      --bg-input: #1e293b;
+      --bg-input-border: #334155;
+      --bg-note: rgba(99, 102, 241, 0.1);
+      --bg-note-border: rgba(99, 102, 241, 0.25);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --text-header: #f8fafc;
+      --text-header-sub: #94a3b8;
+      --text-note: #a5b4fc;
+      --accent-1: #818cf8;
+      --accent-2: #60a5fa;
+      --gradient-btn: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+      --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --shadow-btn: 0 8px 24px rgba(99, 102, 241, 0.3);
+      --shadow-header: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ===== Reset & base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-body);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background var(--transition-med), color var(--transition-med);
+    }
+
+    /* ===== Header ===== */
+    header {
+      position: relative;
+      padding: 2.5rem 1.5rem 2rem;
+      background: var(--bg-header);
+      color: var(--text-header);
+      text-align: center;
+      box-shadow: var(--shadow-header);
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 600px 300px at 30% 60%, rgba(99, 102, 241, 0.15), transparent),
+                  radial-gradient(ellipse 500px 250px at 70% 40%, rgba(37, 99, 235, 0.12), transparent);
+      pointer-events: none;
+    }
+    header h1 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      position: relative;
+      background: linear-gradient(135deg, #fff 0%, #c7d2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      margin: 0.85rem auto 0;
+      max-width: 720px;
+      color: var(--text-header-sub);
+      line-height: 1.7;
+      font-size: 1.05rem;
+      position: relative;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f9fafb;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      transition: background var(--transition-fast), transform var(--transition-fast);
+      backdrop-filter: blur(8px);
+      z-index: 5;
+    }
+    .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.08);
+    }
+
+    /* ===== Main layout ===== */
+    main {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+      display: grid;
+      gap: 1.75rem;
+      flex: 1;
+    }
+
+    /* ===== Cards ===== */
+    .card {
+      padding: 1.75rem;
+      border-radius: var(--radius-card);
+      background: var(--bg-card);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--bg-card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: background var(--transition-med), border-color var(--transition-med), box-shadow var(--transition-med);
+      animation: fadeInUp 0.5s ease both;
+    }
+    .card:nth-child(2) { animation-delay: 0.1s; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Grids ===== */
+    .grid-2 { display: grid; gap: 1.75rem; }
+    .grid-3 { display: grid; gap: 1rem; }
+
+    @media (min-width: 940px) {
+      .grid-2 { grid-template-columns: 1.25fr 0.75fr; }
+    }
+
+    /* ===== Form elements ===== */
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.55rem;
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    input[type="file"], select, textarea, button { width: 100%; font: inherit; }
+    input[type="file"], select, textarea {
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-input);
+      border: 1px solid var(--bg-input-border);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-med);
+    }
+    input[type="file"]:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-1);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    }
+    textarea {
+      min-height: 480px;
+      resize: vertical;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+    }
+
+    /* ===== Control layout ===== */
+    .control-row {
+      display: grid;
+      align-items: end;
+      gap: 1rem;
+      grid-template-columns: minmax(0, 1.4fr) 1fr;
+    }
+    .option-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    }
+
+    /* ===== Buttons ===== */
+    .button-group { display: grid; gap: 0.85rem; grid-template-columns: 1fr 1fr; }
+    button {
+      padding: 0.9rem 1.2rem;
+      border: none;
+      border-radius: var(--radius-btn);
+      cursor: pointer;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: var(--gradient-btn);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+      box-shadow: var(--shadow-btn);
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+      box-shadow: 0 12px 28px rgba(79, 70, 229, 0.3);
+    }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* ===== Status & progress ===== */
+    .status {
+      margin-top: 1rem;
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      min-height: 1.5rem;
+    }
+    .panel-title {
+      margin: 0 0 1.15rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .helper {
+      margin: 0.85rem 0 0;
+      color: var(--text-muted);
+      line-height: 1.7;
+      font-size: 0.92rem;
+    }
+    .note {
+      margin-top: 1rem;
+      padding: 1rem 1.15rem;
+      border-radius: var(--radius-input);
+      background: var(--bg-note);
+      color: var(--text-note);
+      border: 1px solid var(--bg-note-border);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      transition: background var(--transition-med), color var(--transition-med), border-color var(--transition-med);
+    }
+
+    /* ===== File load progress ===== */
+    .file-load-wrapper { margin-top: 1rem; }
+    .file-progress-wrap {
+      position: relative;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--bg-input-border);
+      height: 8px;
+      margin-top: 0.6rem;
+    }
+    .file-progress-bar {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: var(--gradient-progress);
+      transition: width 0.25s ease;
+    }
+    .file-load-text {
+      margin-top: 0.45rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    /* ===== Main progress ===== */
+    .progress-wrap {
+      position: relative;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--bg-input-border);
+      height: 10px;
+      margin-top: 1rem;
+    }
+    .progress-bar {
+      height: 100%;
+      transition: width 0.25s ease;
+      background: var(--gradient-progress-main);
+      width: 0;
+      border-radius: 999px;
+    }
+
+    /* ===== Info boxes ===== */
+    .info-box {
+      padding: 0.8rem 1rem;
+      border-radius: var(--radius-input);
+      background: var(--bg-input);
+      border: 1px solid var(--bg-input-border);
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      transition: background var(--transition-med), border-color var(--transition-med);
+    }
+
+    /* ===== Tabs ===== */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+      border-bottom: 2px solid var(--bg-input-border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      position: relative;
+      transition: color var(--transition-fast);
+    }
+    .tab-btn:hover:not(:disabled) {
+      transform: none;
+      box-shadow: none;
+      filter: none;
+      color: var(--text-primary);
+    }
+    .tab-btn.active {
+      color: var(--accent-1);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-1);
+      border-radius: 2px 2px 0 0;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== Preview panel ===== */
+    .preview-panel {
+      min-height: 480px;
+      max-height: 680px;
+      overflow-y: auto;
+      padding: 1.5rem;
+      border-radius: var(--radius-input);
+      border: 1px solid var(--bg-input-border);
+      background: var(--bg-input);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: var(--text-primary);
+      transition: background var(--transition-med), border-color var(--transition-med);
+    }
+    .preview-panel h1, .preview-panel h2, .preview-panel h3 {
+      margin: 1.2em 0 0.5em;
+      color: var(--text-primary);
+    }
+    .preview-panel h1 { font-size: 1.6rem; border-bottom: 2px solid var(--bg-input-border); padding-bottom: 0.4em; }
+    .preview-panel h2 { font-size: 1.3rem; border-bottom: 1px solid var(--bg-input-border); padding-bottom: 0.3em; }
+    .preview-panel h3 { font-size: 1.1rem; }
+    .preview-panel p { margin: 0.6em 0; }
+    .preview-panel ul, .preview-panel ol { margin: 0.5em 0; padding-left: 1.5em; }
+    .preview-panel code {
+      background: rgba(99, 102, 241, 0.08);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+    }
+    .preview-panel pre {
+      background: rgba(15, 23, 42, 0.06);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 0.75em 0;
+    }
+    [data-theme="dark"] .preview-panel pre { background: rgba(0, 0, 0, 0.3); }
+    .preview-panel table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75em 0;
+    }
+    .preview-panel th, .preview-panel td {
+      border: 1px solid var(--bg-input-border);
+      padding: 0.5em 0.75em;
+      text-align: left;
+    }
+    .preview-panel th { background: rgba(99, 102, 241, 0.06); font-weight: 600; }
+    .preview-panel blockquote {
+      border-left: 3px solid var(--accent-1);
+      padding: 0.5em 1em;
+      margin: 0.75em 0;
+      color: var(--text-secondary);
+      background: rgba(99, 102, 241, 0.04);
+      border-radius: 0 8px 8px 0;
+    }
+    .preview-panel a { color: var(--accent-2); text-decoration: underline; }
+    .preview-panel hr { border: none; border-top: 1px solid var(--bg-input-border); margin: 1.5em 0; }
+    .preview-panel img { max-width: 100%; border-radius: 8px; margin: 0.5em 0; }
+    .preview-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--bg-card-border);
+      transition: color var(--transition-med), border-color var(--transition-med);
+    }
+    footer a { color: var(--accent-1); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 600px) {
+      .control-row { grid-template-columns: 1fr; }
+      .button-group { grid-template-columns: 1fr; }
+      .option-grid { grid-template-columns: 1fr; }
+      header { padding: 1.75rem 1rem 1.5rem; }
+      .theme-toggle { top: 0.75rem; right: 0.75rem; width: 38px; height: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button class="theme-toggle" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema">🌙</button>
+    <h1>PDF2MD AI</h1>
+    <p>Convierte PDFs digitales, escaneados e híbridos en Markdown limpio y estructurado para Obsidian, NotebookLM, LangChain, GitHub, RAG y sistemas IA.</p>
+  </header>
+
+  <main>
+    <!-- Config + Summary Card -->
+    <section class="card">
+      <div class="grid-2">
+        <div>
+          <p class="panel-title">Configuración de conversión</p>
+          <div class="control-row">
+            <div>
+              <label for="pdfFile">Archivo PDF</label>
+              <input id="pdfFile" type="file" accept="application/pdf" />
+              <div id="fileLoadWrapper" class="file-load-wrapper" hidden>
+                <div class="file-progress-wrap"><div id="fileProgressBar" class="file-progress-bar"></div></div>
+                <div id="fileStatusText" class="file-load-text">Esperando carga de archivo...</div>
+              </div>
+            </div>
+            <button id="convertButton" disabled>Convertir ahora</button>
+          </div>
+          <div class="option-grid">
+            <div>
+              <label for="ocrMode">Modo OCR</label>
+              <select id="ocrMode">
+                <option value="auto" selected>Auto: solo escaneos</option>
+                <option value="always">Siempre OCR</option>
+                <option value="never">Nunca OCR</option>
+              </select>
+            </div>
+            <div>
+              <label for="ocrLang">Idioma OCR</label>
+              <select id="ocrLang">
+                <option value="spa" selected>Español</option>
+                <option value="eng">English</option>
+                <option value="por">Português</option>
+                <option value="fra">Français</option>
+                <option value="deu">Deutsch</option>
+                <option value="spa+eng">Español + English</option>
+              </select>
+            </div>
+            <div>
+              <label for="imageMode">Imágenes / diagramas</label>
+              <select id="imageMode">
+                <option value="auto" selected>Auto</option>
+                <option value="embed">Incluir imágenes página completa</option>
+                <option value="none">Omitir imágenes</option>
+              </select>
+            </div>
+            <div>
+              <label for="tableMode">Detección de tablas</label>
+              <select id="tableMode">
+                <option value="auto" selected>Auto</option>
+                <option value="header">Tablas como Markdown</option>
+                <option value="raw">Texto sin tabla</option>
+              </select>
+            </div>
+          </div>
+          <div class="note">
+            <strong>Consejo:</strong> Para documentos escaneados o mixtos, use OCR automático. La conversión puede tardar más en archivos grandes.
+          </div>
+          <div class="status" id="statusText">Elija un PDF para comenzar.</div>
+          <div class="progress-wrap" hidden>
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+        </div>
+        <div>
+          <p class="panel-title">Resumen de PDF</p>
+          <div class="grid-3">
+            <div>
+              <label>Páginas</label>
+              <div id="pageCount" class="info-box">-</div>
+            </div>
+            <div>
+              <label>OCR activo</label>
+              <div id="ocrStatus" class="info-box">-</div>
+            </div>
+            <div>
+              <label>Tiempo</label>
+              <div id="duration" class="info-box">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Result Card -->
+    <section class="card">
+      <p class="panel-title">Markdown generado</p>
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" id="tabCode" role="tab" aria-selected="true" data-tab="code">Código Markdown</button>
+        <button class="tab-btn" id="tabPreview" role="tab" aria-selected="false" data-tab="preview">Vista previa</button>
+      </div>
+      <div id="panelCode" class="tab-panel active">
+        <textarea id="resultMarkdown" placeholder="El Markdown generado aparecerá aquí..." readonly></textarea>
+      </div>
+      <div id="panelPreview" class="tab-panel">
+        <div id="previewContent" class="preview-panel">
+          <div class="preview-empty">La vista previa aparecerá después de convertir un PDF.</div>
+        </div>
+      </div>
+      <div class="button-group">
+        <button id="downloadButton" disabled>⬇ Descargar .md</button>
+        <button id="copyButton" disabled>📋 Copiar al portapapeles</button>
+      </div>
+      <p class="helper">El documento generado incluye encabezados, listas, tablas Markdown simples y texto OCR cuando se detectan páginas escaneadas.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>PDF2MD AI — Conversión 100% local en tu navegador. Ningún archivo se envía a servidores externos.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.113/pdf.min.js" onerror="console.warn('pdf.js CDN failed, trying fallback...');this.src='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.10.113/build/pdf.min.js'"></script>
+  <script src="https://unpkg.com/tesseract.js@4.1.3/dist/tesseract.min.js" onerror="console.warn('Tesseract CDN failed, trying fallback...');this.src='https://cdn.jsdelivr.net/npm/tesseract.js@4.1.3/dist/tesseract.min.js'"></script>
+  <script>
+    /* ===== DOM References ===== */
+    const pdfFile = document.getElementById('pdfFile');
+    const convertButton = document.getElementById('convertButton');
+    const downloadButton = document.getElementById('downloadButton');
+    const copyButton = document.getElementById('copyButton');
+    const resultMarkdown = document.getElementById('resultMarkdown');
+    const statusText = document.getElementById('statusText');
+    const progressBar = document.getElementById('progressBar');
+    const progressWrap = document.querySelector('.progress-wrap');
+    const pageCount = document.getElementById('pageCount');
+    const ocrStatus = document.getElementById('ocrStatus');
+    const duration = document.getElementById('duration');
+    const ocrModeSelect = document.getElementById('ocrMode');
+    const ocrLangSelect = document.getElementById('ocrLang');
+    const imageModeSelect = document.getElementById('imageMode');
+    const tableModeSelect = document.getElementById('tableMode');
+    const fileProgressBar = document.getElementById('fileProgressBar');
+    const fileLoadWrapper = document.getElementById('fileLoadWrapper');
+    const fileStatusText = document.getElementById('fileStatusText');
+    const previewContent = document.getElementById('previewContent');
+    const themeToggle = document.getElementById('themeToggle');
+
+    /* Configure pdf.js worker — deferred to avoid crash if CDN is slow */
+    function ensurePdfJs() {
+      if (typeof pdfjsLib === 'undefined') {
+        throw new Error('pdf.js no se ha cargado. Verifique su conexión a internet y recargue la página.');
+      }
+      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.113/pdf.worker.min.js';
+      }
+    }
+    // Try to configure immediately if available, but don't crash if not
+    try { ensurePdfJs(); } catch(e) { console.warn('pdf.js will be configured on first use:', e.message); }
+
+    let currentPdfFile = null;
+    let currentPdfBuffer = null;
+    let ocrWorker = null;
+    let ocrWorkerInitialized = false;
+    let currentOcrLang = null;
+
+    /* ===== Theme Toggle ===== */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('pdf2md-theme', theme);
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('pdf2md-theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyTheme(savedTheme);
+
+    /* ===== Tabs ===== */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        const target = btn.getAttribute('data-tab');
+        document.getElementById(target === 'code' ? 'panelCode' : 'panelPreview').classList.add('active');
+        if (target === 'preview') {
+          updatePreview();
+        }
+      });
+    });
+
+    function updatePreview() {
+      const md = resultMarkdown.value;
+      if (!md.trim()) {
+        previewContent.innerHTML = '<div class="preview-empty">La vista previa aparecerá después de convertir un PDF.</div>';
+        return;
+      }
+      previewContent.innerHTML = renderMarkdownToHtml(md);
+    }
+
+    /* ===== File handling ===== */
+    pdfFile.addEventListener('change', handleFileSelection);
+    pdfFile.addEventListener('input', handleFileSelection);
+
+    async function handleFileSelection(event) {
+      const input = event?.target || pdfFile;
+      const selectedFile = input.files && input.files[0] ? input.files[0] : null;
+      currentPdfFile = selectedFile;
+
+      if (currentPdfFile) {
+        const filename = String(currentPdfFile.name || '').toLowerCase();
+        const looksLikePdf = currentPdfFile.type === 'application/pdf' || filename.endsWith('.pdf');
+        if (!looksLikePdf) {
+          statusText.textContent = 'El archivo seleccionado no es un PDF válido.';
+          currentPdfFile = null;
+        }
+      }
+
+      resultMarkdown.value = '';
+      downloadButton.disabled = true;
+      copyButton.disabled = true;
+      duration.textContent = '-';
+      fileLoadWrapper.hidden = true;
+      currentPdfBuffer = null;
+      convertButton.disabled = true;
+
+      if (currentPdfFile) {
+        fileLoadWrapper.hidden = false;
+        fileStatusText.textContent = 'Cargando archivo...';
+        fileProgressBar.style.width = '0%';
+        try {
+          currentPdfBuffer = await readFileAsArrayBuffer(currentPdfFile, progress => {
+            fileLoadWrapper.hidden = false;
+            fileProgressBar.style.width = `${progress}%`;
+            fileStatusText.textContent = `Cargando archivo: ${progress}%`;
+          });
+          fileProgressBar.style.width = '100%';
+          fileStatusText.textContent = 'Archivo cargado correctamente.';
+          convertButton.disabled = false;
+        } catch (error) {
+          statusText.textContent = 'Error cargando el archivo.';
+          console.error(error);
+          currentPdfFile = null;
+          fileLoadWrapper.hidden = true;
+          return;
+        }
+      }
+      statusText.textContent = currentPdfFile ? `Archivo listo: ${currentPdfFile.name}` : 'Elija un PDF para comenzar.';
+    }
+
+    /* ===== Convert ===== */
+    convertButton.addEventListener('click', async () => {
+      if (!currentPdfFile) return;
+      convertButton.disabled = true;
+      statusText.textContent = 'Iniciando conversión...';
+      progressWrap.hidden = false;
+      progressBar.style.width = '0%';
+      resultMarkdown.value = '';
+      downloadButton.disabled = true;
+      copyButton.disabled = true;
+
+      const startTime = performance.now();
+      try {
+        const markdown = await convertPdfToMarkdown(currentPdfFile);
+        resultMarkdown.value = markdown;
+        downloadButton.disabled = !markdown;
+        copyButton.disabled = !markdown;
+        statusText.textContent = 'Conversión completada con éxito.';
+        updatePreview();
+      } catch (error) {
+        console.error(error);
+        statusText.textContent = `Error: ${error.message || 'No se pudo convertir el PDF.'}`;
+      } finally {
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+        duration.textContent = `${elapsed} s`;
+        convertButton.disabled = false;
+        progressBar.style.width = '100%';
+      }
+    });
+
+    /* ===== Download & Copy ===== */
+    downloadButton.addEventListener('click', () => {
+      const content = resultMarkdown.value;
+      if (!content) return;
+      const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (currentPdfFile ? currentPdfFile.name.replace(/\.pdf$/i, '') : 'PDF2MD_AI') + '.md';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    copyButton.addEventListener('click', async () => {
+      const content = resultMarkdown.value;
+      if (!content) return;
+      try {
+        await navigator.clipboard.writeText(content);
+        const originalText = copyButton.textContent;
+        copyButton.textContent = '✅ Copiado!';
+        setTimeout(() => { copyButton.textContent = originalText; }, 2000);
+      } catch {
+        statusText.textContent = 'No se pudo copiar. Intenta seleccionar el texto manualmente.';
+      }
+    });
+
+    /* ===== PDF Conversion Pipeline ===== */
+    async function convertPdfToMarkdown(file) {
+      // Ensure pdf.js is available before conversion
+      ensurePdfJs();
+      const arrayBuffer = currentPdfBuffer || await readFileAsArrayBuffer(file, progress => {
+        fileLoadWrapper.hidden = false;
+        fileProgressBar.style.width = `${progress}%`;
+        fileStatusText.textContent = `Cargando archivo: ${progress}%`;
+      });
+      if (!currentPdfBuffer) {
+        currentPdfBuffer = arrayBuffer;
+        fileStatusText.textContent = 'Archivo cargado correctamente.';
+      }
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+      const maxPages = pdf.numPages;
+      pageCount.textContent = maxPages;
+      ocrStatus.textContent = ocrModeSelect.value === 'never' ? 'Desactivado' : 'Disponible';
+
+      const pageMarkdowns = [];
+      const shouldOcr = ocrModeSelect.value;
+      const includeImages = imageModeSelect.value;
+      const tableMode = tableModeSelect.value;
+
+      if (shouldOcr === 'always' || shouldOcr === 'auto') {
+        await initOcrWorker();
+      }
+
+      for (let pageNumber = 1; pageNumber <= maxPages; pageNumber++) {
+        const progress = Math.round(((pageNumber - 1) / maxPages) * 100);
+        progressBar.style.width = `${progress}%`;
+        statusText.textContent = `Procesando página ${pageNumber} de ${maxPages}...`;
+
+        const page = await pdf.getPage(pageNumber);
+        const pageSummary = await processPage(page, pageNumber, shouldOcr, includeImages, tableMode);
+        pageMarkdowns.push(pageSummary.markdown);
+      }
+
+      progressBar.style.width = '100%';
+      return pageMarkdowns.join('\n\n---\n\n');
+    }
+
+    function readFileAsArrayBuffer(file, onProgress) {
+      if (!onProgress && file.arrayBuffer) {
+        return file.arrayBuffer();
+      }
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onprogress = event => {
+          if (event.lengthComputable && typeof onProgress === 'function') {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            onProgress(percent);
+          }
+        };
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo PDF.'));
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    /* ===== OCR Worker (Tesseract.js v4 API) ===== */
+    async function initOcrWorker() {
+      const lang = ocrLangSelect.value || 'spa';
+
+      // If language changed, terminate existing worker and reinitialize
+      if (ocrWorkerInitialized && currentOcrLang !== lang) {
+        try { await ocrWorker.terminate(); } catch (e) { /* ignore */ }
+        ocrWorkerInitialized = false;
+        ocrWorker = null;
+      }
+
+      if (ocrWorkerInitialized) return;
+
+      statusText.textContent = `Inicializando OCR (${lang})...`;
+      // Tesseract.js v4 API: createWorker returns a promise directly
+      ocrWorker = await Tesseract.createWorker(lang, 1, {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            statusText.textContent = `OCR en progreso: ${Math.round(m.progress * 100)}%`;
+          }
+        }
+      });
+      currentOcrLang = lang;
+      ocrWorkerInitialized = true;
+    }
+
+    /* ===== Page Processing ===== */
+    async function processPage(page, pageNumber, ocrMode, imageMode, tableMode) {
+      const textContent = await page.getTextContent({ normalizeWhitespace: true });
+      const pageText = extractTextFromContent(textContent);
+      const annotations = await page.getAnnotations({ intent: 'display' });
+
+      const pdfImageData = imageMode !== 'none' ? await renderPageImage(page, 1.5) : null;
+      const useOcr = shouldUseOcr(pageText, ocrMode);
+      let markdown = '';
+
+      if (useOcr) {
+        ocrStatus.textContent = 'Activo';
+        const ocrText = await runOcrOnPage(page, pageNumber, pdfImageData);
+        markdown = buildMarkdownFromText(ocrText, annotations, tableMode, true);
+      } else {
+        markdown = buildMarkdownFromText(pageText, annotations, tableMode, false);
+      }
+
+      if (imageMode === 'embed' && pdfImageData) {
+        markdown += `\n\n![Página ${pageNumber}](${pdfImageData})\n`;
+      }
+
+      return { markdown };
+    }
+
+    function extractTextFromContent(textContent) {
+      const rawItems = textContent.items || [];
+      const groups = [];
+      const tolerance = 3;
+
+      for (const item of rawItems) {
+        const text = String(item.str || '').replace(/\s+/g, ' ').trim();
+        if (!text) continue;
+        const transform = item.transform || [1, 0, 0, 1, 0, 0];
+        const x = transform[4] || 0;
+        const y = transform[5] || 0;
+        const size = item.height || Math.abs(transform[3]) || 0;
+
+        let group = groups.find(g => Math.abs(g.y - y) < tolerance);
+        if (!group) {
+          group = { y, items: [] };
+          groups.push(group);
+        }
+        group.items.push({ text, x, size });
+      }
+
+      groups.sort((a, b) => b.y - a.y);
+      const lines = groups.map(group => {
+        const lineItems = group.items.slice().sort((a, b) => a.x - b.x);
+        const text = lineItems.map(i => i.text).join(' ').replace(/\s+/g, ' ').trim();
+        const fontSize = lineItems.reduce((sum, item) => sum + item.size, 0) / Math.max(lineItems.length, 1);
+        const indent = Math.min(...lineItems.map(i => i.x));
+        return { text, indent, fontSize, items: lineItems };
+      });
+
+      return lines.map(line => line.text).join('\n');
+    }
+
+    function shouldUseOcr(text, mode) {
+      if (mode === 'never') return false;
+      if (mode === 'always') return true;
+      // Auto: use OCR if extracted text is very short (likely scanned page)
+      return text.trim().length < 100;
+    }
+
+    async function runOcrOnPage(page, pageNumber, pageImageData) {
+      if (!ocrWorkerInitialized) {
+        await initOcrWorker();
+      }
+      if (!pageImageData) {
+        pageImageData = await renderPageImage(page, 1.5);
+      }
+      const response = await ocrWorker.recognize(pageImageData);
+      const ocrText = response.data.text || '';
+      return ocrText.trim();
+    }
+
+    async function renderPageImage(page, scale = 1.0) {
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      const context = canvas.getContext('2d');
+      const renderContext = { canvasContext: context, viewport };
+      await page.render(renderContext).promise;
+      return canvas.toDataURL('image/png');
+    }
+
+    /* ===== Markdown Builder ===== */
+    function buildMarkdownFromText(rawText, annotations, tableMode, isOcr) {
+      const lines = rawText
+        .split(/\r?\n/)
+        .map(line => line.replace(/\u00A0/g, ' ').trim())
+        .filter((line) => {
+          if (!line) return false;
+          if (line.startsWith('Page ') && /^Page\s+\d+/i.test(line)) return false;
+          return true;
+        });
+
+      const blocks = [];
+      let accumulated = [];
+      let lastWasTable = false;
+      let lastWasList = false;
+      const tableRows = [];
+
+      const addParagraph = () => {
+        if (!accumulated.length) return;
+        blocks.push({ type: 'paragraph', text: accumulated.join(' ') });
+        accumulated = [];
+      };
+
+      const addTable = () => {
+        if (!tableRows.length) return;
+        blocks.push({ type: 'table', rows: tableRows.slice() });
+        tableRows.length = 0;
+      };
+
+      const addList = (item) => {
+        if (!lastWasList || !blocks.length || blocks[blocks.length - 1].type !== 'list') {
+          blocks.push({ type: 'list', items: [item] });
+        } else {
+          blocks[blocks.length - 1].items.push(item);
+        }
+      };
+
+      const normalizeLine = line => line.replace(/\s{2,}/g, '  ').trim();
+
+      for (const rawLine of lines) {
+        const line = normalizeLine(rawLine);
+        if (!line) continue;
+
+        const tableLine = tableMode !== 'raw' && parseTableLine(line);
+        const listLine = parseListLine(line);
+        const headingLine = parseHeading(line);
+        const codeBlock = parseCodeLine(rawLine);
+
+        if (headingLine) {
+          addParagraph();
+          addTable();
+          blocks.push({ type: 'heading', text: headingLine.text, level: headingLine.level });
+          lastWasTable = false;
+          lastWasList = false;
+          continue;
+        }
+
+        if (listLine) {
+          addParagraph();
+          addTable();
+          addList(listLine);
+          lastWasList = true;
+          lastWasTable = false;
+          continue;
+        }
+
+        if (codeBlock) {
+          addParagraph();
+          addTable();
+          blocks.push({ type: 'code', text: codeBlock });
+          lastWasList = false;
+          lastWasTable = false;
+          continue;
+        }
+
+        if (tableLine) {
+          addParagraph();
+          tableRows.push(tableLine);
+          lastWasTable = true;
+          lastWasList = false;
+          continue;
+        }
+
+        if (lastWasTable) {
+          addTable();
+          lastWasTable = false;
+        }
+
+        accumulated.push(line);
+        lastWasList = false;
+      }
+
+      addParagraph();
+      addTable();
+
+      if (annotations && annotations.length) {
+        const annotationText = buildAnnotationSummary(annotations);
+        if (annotationText) {
+          blocks.push({ type: 'paragraph', text: annotationText });
+        }
+      }
+
+      return blocks.map(block => renderBlock(block)).join('\n\n').trim() + '\n';
+    }
+
+    /* ===== Parsers (improved) ===== */
+    function parseHeading(line) {
+      const trimmed = line.trim();
+      if (trimmed.length < 4) return null;
+      // All-caps lines as H2
+      if (/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\-]{3,}$/.test(trimmed) && trimmed === trimmed.toUpperCase()) {
+        return { text: trimmed, level: 2 };
+      }
+      // Common section keywords
+      if (/^(Capítulo|Sección|Artículo|Resumen|Introducción|Conclusión|Conclusiones|Objetivo|Objetivos|Métodos?|Anexo|Bibliografía|Referencias|Apéndice)\b/i.test(trimmed)) {
+        return { text: trimmed, level: 2 };
+      }
+      // Numbered sections (e.g., "1. Title" or "1) Title") with max 8 words
+      if (/^\d+(\.|)\)\s+/.test(trimmed) && trimmed.split(' ').length <= 8) {
+        return { text: trimmed.replace(/^\d+(\.|)\)\s+/, '').trim(), level: 3 };
+      }
+      return null;
+    }
+
+    function parseListLine(line) {
+      const match = line.match(/^([\-•*]|\d+\.|\d+\))\s+(.*)$/);
+      if (!match) return null;
+      return `- ${match[2].trim()}`;
+    }
+
+    function parseCodeLine(line) {
+      // Require significant indentation (6+ spaces or 2+ tabs) to avoid
+      // false positives from normal PDF margins
+      if (/^\s{6,}/.test(line) || /^\t{2,}/.test(line)) {
+        const trimmed = line.replace(/\t/g, '    ');
+        // Only classify as code if it contains programming-like characters
+        if (/[{};=<>()[\]]/.test(trimmed) || /^\s*(\/\/|#|\/\*)/.test(trimmed)) {
+          return trimmed;
+        }
+      }
+      // Require at least 2 different code indicators + syntax characters
+      const codeKeywords = /\b(function|var|let|const|if|else|for|while|return|class|def|import|export|printf|console\.log|async|await|try|catch)\b/g;
+      const matches = line.match(codeKeywords);
+      if (matches && matches.length >= 2 && line.length < 130 && /[{};=<>()]/.test(line)) {
+        return line;
+      }
+      return null;
+    }
+
+    function parseTableLine(line) {
+      // First: try pipe-delimited (strongest signal)
+      const pipeSplit = line.split('|').map(part => part.trim()).filter(Boolean);
+      if (pipeSplit.length >= 2) {
+        return pipeSplit;
+      }
+      // Second: try space-delimited, but require 3+ columns and reasonable column lengths
+      const altSplit = line.split(/\s{3,}/).map(part => part.trim()).filter(Boolean);
+      if (altSplit.length >= 3 && altSplit.length <= 12 && line.length > 25) {
+        // Verify columns have somewhat consistent lengths (table heuristic)
+        const avgLen = altSplit.reduce((s, c) => s + c.length, 0) / altSplit.length;
+        const variance = altSplit.reduce((s, c) => s + Math.pow(c.length - avgLen, 2), 0) / altSplit.length;
+        // If variance is extremely high, it's probably not a table
+        if (variance < avgLen * avgLen * 4) {
+          return altSplit;
+        }
+      }
+      return null;
+    }
+
+    function buildAnnotationSummary(annotations) {
+      const links = annotations
+        .filter(item => item.url)
+        .map(item => `- [${item.url}](${item.url})`);
+      if (!links.length) return '';
+      return '## Enlaces detectados\n' + links.join('\n');
+    }
+
+    function renderBlock(block) {
+      switch (block.type) {
+        case 'heading':
+          return '#'.repeat(Math.min(block.level, 3)) + ' ' + block.text;
+        case 'list':
+          return block.items.join('\n');
+        case 'table':
+          return renderTable(block.rows);
+        case 'code':
+          return '```\n' + block.text + '\n```';
+        case 'paragraph':
+        default:
+          return inlineLinks(block.text);
+      }
+    }
+
+    function renderTable(rows) {
+      const cleaned = rows.map(row => row.map(cell => cell.replace(/\|/g, '\\|').trim()));
+      const columnCount = Math.max(...cleaned.map(row => row.length));
+      const normalized = cleaned.map(row => {
+        const padded = row.slice();
+        while (padded.length < columnCount) padded.push('');
+        return padded;
+      });
+      const header = normalized[0];
+      const separator = header.map(() => '---');
+      const body = normalized.slice(1);
+      const lines = [`| ${header.join(' | ')} |`, `| ${separator.join(' | ')} |`];
+      body.forEach(row => lines.push(`| ${row.join(' | ')} |`));
+      return lines.join('\n');
+    }
+
+    function inlineLinks(text) {
+      // Only convert bare URLs to Markdown links; don't break existing Markdown syntax
+      return text.replace(/(https?:\/\/[\w\-./?=#%&+;:@~]+)/g, (match) => {
+        return `[${match}](${match})`;
+      });
+    }
+
+    /* ===== Simple Markdown → HTML renderer (for preview) ===== */
+    function renderMarkdownToHtml(md) {
+      let html = escapeHtml(md);
+
+      // Horizontal rules
+      html = html.replace(/^---$/gm, '<hr>');
+
+      // Code blocks (fenced)
+      html = html.replace(/```([\s\S]*?)```/g, (_, code) => {
+        return `<pre><code>${code.trim()}</code></pre>`;
+      });
+
+      // Headers
+      html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+      html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+      html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+      // Bold and italic
+      html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+      // Images
+      html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
+
+      // Links
+      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+      // Blockquotes
+      html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+      // Unordered list items
+      html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+      // Tables
+      html = html.replace(/(\|.+\|\n\|[\s\-|]+\|\n(?:\|.+\|\n?)*)/g, (tableBlock) => {
+        const rows = tableBlock.trim().split('\n').filter(r => !/^\|[\s\-|]+\|$/.test(r));
+        if (rows.length === 0) return tableBlock;
+        const parseRow = (row, tag) => {
+          const cells = row.split('|').filter((_, i, a) => i > 0 && i < a.length - 1).map(c => c.trim());
+          return `<tr>${cells.map(c => `<${tag}>${c}</${tag}>`).join('')}</tr>`;
+        };
+        const headerHtml = parseRow(rows[0], 'th');
+        const bodyHtml = rows.slice(1).map(r => parseRow(r, 'td')).join('');
+        return `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+      });
+
+      // Paragraphs: wrap remaining loose lines
+      html = html.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return '';
+        if (/^<(h[1-6]|ul|ol|li|pre|table|thead|tbody|tr|th|td|blockquote|hr|img|div)/.test(trimmed)) return trimmed;
+        return `<p>${trimmed}</p>`;
+      }).join('\n');
+
+      return html;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  </script>
+</body>
+</html>
