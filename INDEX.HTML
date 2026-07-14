@@ -1,95 +1,215 @@
-﻿<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF2MD AI</title>
+  <meta name="description" content="Convierte PDFs digitales, escaneados e híbridos en Markdown limpio y estructurado para Obsidian, NotebookLM, LangChain, GitHub, RAG y sistemas IA." />
+  <title>PDF2MD AI — Conversor PDF a Markdown</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
+    /* ===== Design tokens ===== */
     :root {
-      color-scheme: light;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f3f4f6;
-      color: #111827;
+      --bg-body: #f0f2f8;
+      --bg-header: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --bg-card: rgba(255, 255, 255, 0.82);
+      --bg-card-border: rgba(148, 163, 184, 0.22);
+      --bg-input: #f8fafc;
+      --bg-input-border: #d1d5db;
+      --bg-note: #eef2ff;
+      --bg-note-border: #c7d2fe;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #6b7280;
+      --text-header: #f9fafb;
+      --text-header-sub: #cbd5e1;
+      --text-note: #3730a3;
+      --accent-1: #6366f1;
+      --accent-2: #2563eb;
+      --gradient-btn: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+      --gradient-progress: linear-gradient(90deg, #34d399 0%, #3b82f6 100%);
+      --gradient-progress-main: linear-gradient(90deg, #2563eb 0%, #6366f1 100%);
+      --shadow-card: 0 8px 32px rgba(15, 23, 42, 0.08);
+      --shadow-btn: 0 8px 24px rgba(79, 70, 229, 0.22);
+      --shadow-header: 0 10px 40px rgba(15, 23, 42, 0.18);
+      --radius-card: 20px;
+      --radius-input: 14px;
+      --radius-btn: 14px;
+      --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --transition-fast: 0.18s ease;
+      --transition-med: 0.3s ease;
     }
-    * {
-      box-sizing: border-box;
+
+    [data-theme="dark"] {
+      --bg-body: #0b0f1a;
+      --bg-header: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+      --bg-card: rgba(30, 41, 59, 0.72);
+      --bg-card-border: rgba(100, 116, 139, 0.28);
+      --bg-input: #1e293b;
+      --bg-input-border: #334155;
+      --bg-note: rgba(99, 102, 241, 0.1);
+      --bg-note-border: rgba(99, 102, 241, 0.25);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --text-header: #f8fafc;
+      --text-header-sub: #94a3b8;
+      --text-note: #a5b4fc;
+      --accent-1: #818cf8;
+      --accent-2: #60a5fa;
+      --gradient-btn: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+      --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --shadow-btn: 0 8px 24px rgba(99, 102, 241, 0.3);
+      --shadow-header: 0 10px 40px rgba(0, 0, 0, 0.4);
     }
+
+    /* ===== Reset & base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      margin: 0;
+      font-family: var(--font-body);
+      background: var(--bg-body);
+      color: var(--text-primary);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 45%, #ffffff 100%);
+      transition: background var(--transition-med), color var(--transition-med);
     }
+
+    /* ===== Header ===== */
     header {
-      padding: 2rem 1.6rem;
-      background: #1f2937;
-      color: #f9fafb;
+      position: relative;
+      padding: 2.5rem 1.5rem 2rem;
+      background: var(--bg-header);
+      color: var(--text-header);
       text-align: center;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+      box-shadow: var(--shadow-header);
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 600px 300px at 30% 60%, rgba(99, 102, 241, 0.15), transparent),
+                  radial-gradient(ellipse 500px 250px at 70% 40%, rgba(37, 99, 235, 0.12), transparent);
+      pointer-events: none;
     }
     header h1 {
-      margin: 0;
-      font-size: clamp(2rem, 3vw, 3rem);
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 800;
       letter-spacing: -0.04em;
+      position: relative;
+      background: linear-gradient(135deg, #fff 0%, #c7d2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     header p {
-      margin: .75rem auto 0;
-      max-width: 780px;
-      color: #d1d5db;
+      margin: 0.85rem auto 0;
+      max-width: 720px;
+      color: var(--text-header-sub);
       line-height: 1.7;
+      font-size: 1.05rem;
+      position: relative;
     }
+    .theme-toggle {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f9fafb;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      transition: background var(--transition-fast), transform var(--transition-fast);
+      backdrop-filter: blur(8px);
+      z-index: 5;
+    }
+    .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.08);
+    }
+
+    /* ===== Main layout ===== */
     main {
-      width: min(1240px, 100%);
+      width: min(1280px, 100%);
       margin: 0 auto;
       padding: 2rem 1.25rem 3rem;
       display: grid;
-      gap: 1.5rem;
+      gap: 1.75rem;
+      flex: 1;
     }
+
+    /* ===== Cards ===== */
     .card {
-      padding: 1.5rem;
-      border-radius: 24px;
-      background: #ffffff;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-      border: 1px solid rgba(148, 163, 184, 0.2);
+      padding: 1.75rem;
+      border-radius: var(--radius-card);
+      background: var(--bg-card);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--bg-card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: background var(--transition-med), border-color var(--transition-med), box-shadow var(--transition-med);
+      animation: fadeInUp 0.5s ease both;
     }
-    .grid-2 {
-      display: grid;
-      gap: 1.5rem;
+    .card:nth-child(2) { animation-delay: 0.1s; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .grid-3 {
-      display: grid;
-      gap: 1rem;
+
+    /* ===== Grids ===== */
+    .grid-2 { display: grid; gap: 1.75rem; }
+    .grid-3 { display: grid; gap: 1rem; }
+
+    @media (min-width: 940px) {
+      .grid-2 { grid-template-columns: 1.25fr 0.75fr; }
     }
+
+    /* ===== Form elements ===== */
     label {
       display: block;
-      font-weight: 700;
-      margin-bottom: .65rem;
+      font-weight: 600;
+      margin-bottom: 0.55rem;
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
-    input[type=file], select, textarea, button {
-      width: 100%;
-      font: inherit;
+    input[type="file"], select, textarea, button { width: 100%; font: inherit; }
+    input[type="file"], select, textarea {
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-input);
+      border: 1px solid var(--bg-input-border);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-med);
     }
-    input[type=file], select, textarea {
-      padding: 1rem 1rem;
-      border-radius: 16px;
-      border: 1px solid #d1d5db;
-      background: #f8fafc;
-      transition: border-color .2s ease, box-shadow .2s ease;
-    }
-    input[type=file]:focus, select:focus, textarea:focus {
+    input[type="file"]:focus, select:focus, textarea:focus {
       outline: none;
-      border-color: #6366f1;
+      border-color: var(--accent-1);
       box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
     }
     textarea {
-      min-height: 520px;
+      min-height: 480px;
       resize: vertical;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      line-height: 1.6;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      line-height: 1.65;
       white-space: pre-wrap;
       overflow-wrap: break-word;
     }
+
+    /* ===== Control layout ===== */
     .control-row {
       display: grid;
       align-items: end;
@@ -99,107 +219,261 @@
     .option-grid {
       display: grid;
       gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     }
-    .button-group {
-      display: grid;
-      gap: 1rem;
-    }
+
+    /* ===== Buttons ===== */
+    .button-group { display: grid; gap: 0.85rem; grid-template-columns: 1fr 1fr; }
     button {
-      padding: 1rem 1.2rem;
+      padding: 0.9rem 1.2rem;
       border: none;
-      border-radius: 14px;
+      border-radius: var(--radius-btn);
       cursor: pointer;
-      color: #ffffff;
-      background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
-      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
-      box-shadow: 0 12px 24px rgba(59, 130, 246, 0.18);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: var(--gradient-btn);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+      box-shadow: var(--shadow-btn);
     }
     button:hover:not(:disabled) {
-      transform: translateY(-1px);
-      filter: brightness(1.03);
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+      box-shadow: 0 12px 28px rgba(79, 70, 229, 0.3);
     }
+    button:active:not(:disabled) { transform: translateY(0); }
     button:disabled {
-      opacity: .6;
+      opacity: 0.5;
       cursor: not-allowed;
       box-shadow: none;
     }
+
+    /* ===== Status & progress ===== */
     .status {
       margin-top: 1rem;
-      font-size: .95rem;
-      color: #475569;
+      font-size: 0.92rem;
+      color: var(--text-secondary);
       min-height: 1.5rem;
     }
     .panel-title {
-      margin: 0 0 1rem;
-      font-size: 1.05rem;
+      margin: 0 0 1.15rem;
+      font-size: 1.1rem;
       font-weight: 700;
-      color: #111827;
+      color: var(--text-primary);
     }
     .helper {
-      margin: .75rem 0 0;
-      color: #6b7280;
+      margin: 0.85rem 0 0;
+      color: var(--text-muted);
       line-height: 1.7;
+      font-size: 0.92rem;
     }
     .note {
       margin-top: 1rem;
-      padding: 1rem 1.1rem;
-      border-radius: 16px;
-      background: #eef2ff;
-      color: #3730a3;
-      border: 1px solid #c7d2fe;
+      padding: 1rem 1.15rem;
+      border-radius: var(--radius-input);
+      background: var(--bg-note);
+      color: var(--text-note);
+      border: 1px solid var(--bg-note-border);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      transition: background var(--transition-med), color var(--transition-med), border-color var(--transition-med);
     }
-    .file-load-wrapper {
-      margin-top: 1rem;
-    }
+
+    /* ===== File load progress ===== */
+    .file-load-wrapper { margin-top: 1rem; }
     .file-progress-wrap {
       position: relative;
       overflow: hidden;
       border-radius: 999px;
-      background: #e5e7eb;
-      height: 10px;
-      margin-top: .75rem;
+      background: var(--bg-input-border);
+      height: 8px;
+      margin-top: 0.6rem;
     }
     .file-progress-bar {
       height: 100%;
       width: 0;
       border-radius: 999px;
-      background: linear-gradient(90deg, #34d399 0%, #3b82f6 100%);
-      transition: width .2s ease;
+      background: var(--gradient-progress);
+      transition: width 0.25s ease;
     }
     .file-load-text {
-      margin-top: .5rem;
-      font-size: .95rem;
-      color: #475569;
+      margin-top: 0.45rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
     }
+
+    /* ===== Main progress ===== */
     .progress-wrap {
       position: relative;
       overflow: hidden;
       border-radius: 999px;
-      background: #e5e7eb;
-      height: 12px;
+      background: var(--bg-input-border);
+      height: 10px;
       margin-top: 1rem;
     }
     .progress-bar {
       height: 100%;
-      transition: width .25s ease;
-      background: linear-gradient(90deg, #2563eb 0%, #4f46e5 100%);
+      transition: width 0.25s ease;
+      background: var(--gradient-progress-main);
       width: 0;
+      border-radius: 999px;
     }
-    @media (min-width: 900px) {
-      .grid-2 {
-        grid-template-columns: 1.2fr 0.8fr;
-      }
+
+    /* ===== Info boxes ===== */
+    .info-box {
+      padding: 0.8rem 1rem;
+      border-radius: var(--radius-input);
+      background: var(--bg-input);
+      border: 1px solid var(--bg-input-border);
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      transition: background var(--transition-med), border-color var(--transition-med);
+    }
+
+    /* ===== Tabs ===== */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+      border-bottom: 2px solid var(--bg-input-border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      position: relative;
+      transition: color var(--transition-fast);
+    }
+    .tab-btn:hover:not(:disabled) {
+      transform: none;
+      box-shadow: none;
+      filter: none;
+      color: var(--text-primary);
+    }
+    .tab-btn.active {
+      color: var(--accent-1);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-1);
+      border-radius: 2px 2px 0 0;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== Preview panel ===== */
+    .preview-panel {
+      min-height: 480px;
+      max-height: 680px;
+      overflow-y: auto;
+      padding: 1.5rem;
+      border-radius: var(--radius-input);
+      border: 1px solid var(--bg-input-border);
+      background: var(--bg-input);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: var(--text-primary);
+      transition: background var(--transition-med), border-color var(--transition-med);
+    }
+    .preview-panel h1, .preview-panel h2, .preview-panel h3 {
+      margin: 1.2em 0 0.5em;
+      color: var(--text-primary);
+    }
+    .preview-panel h1 { font-size: 1.6rem; border-bottom: 2px solid var(--bg-input-border); padding-bottom: 0.4em; }
+    .preview-panel h2 { font-size: 1.3rem; border-bottom: 1px solid var(--bg-input-border); padding-bottom: 0.3em; }
+    .preview-panel h3 { font-size: 1.1rem; }
+    .preview-panel p { margin: 0.6em 0; }
+    .preview-panel ul, .preview-panel ol { margin: 0.5em 0; padding-left: 1.5em; }
+    .preview-panel code {
+      background: rgba(99, 102, 241, 0.08);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+    }
+    .preview-panel pre {
+      background: rgba(15, 23, 42, 0.06);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 0.75em 0;
+    }
+    [data-theme="dark"] .preview-panel pre { background: rgba(0, 0, 0, 0.3); }
+    .preview-panel table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75em 0;
+    }
+    .preview-panel th, .preview-panel td {
+      border: 1px solid var(--bg-input-border);
+      padding: 0.5em 0.75em;
+      text-align: left;
+    }
+    .preview-panel th { background: rgba(99, 102, 241, 0.06); font-weight: 600; }
+    .preview-panel blockquote {
+      border-left: 3px solid var(--accent-1);
+      padding: 0.5em 1em;
+      margin: 0.75em 0;
+      color: var(--text-secondary);
+      background: rgba(99, 102, 241, 0.04);
+      border-radius: 0 8px 8px 0;
+    }
+    .preview-panel a { color: var(--accent-2); text-decoration: underline; }
+    .preview-panel hr { border: none; border-top: 1px solid var(--bg-input-border); margin: 1.5em 0; }
+    .preview-panel img { max-width: 100%; border-radius: 8px; margin: 0.5em 0; }
+    .preview-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--bg-card-border);
+      transition: color var(--transition-med), border-color var(--transition-med);
+    }
+    footer a { color: var(--accent-1); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 600px) {
+      .control-row { grid-template-columns: 1fr; }
+      .button-group { grid-template-columns: 1fr; }
+      .option-grid { grid-template-columns: 1fr; }
+      header { padding: 1.75rem 1rem 1.5rem; }
+      .theme-toggle { top: 0.75rem; right: 0.75rem; width: 38px; height: 38px; }
     }
   </style>
 </head>
 <body>
   <header>
+    <button class="theme-toggle" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema">🌙</button>
     <h1>PDF2MD AI</h1>
     <p>Convierte PDFs digitales, escaneados e híbridos en Markdown limpio y estructurado para Obsidian, NotebookLM, LangChain, GitHub, RAG y sistemas IA.</p>
   </header>
 
   <main>
+    <!-- Config + Summary Card -->
     <section class="card">
       <div class="grid-2">
         <div>
@@ -225,6 +499,17 @@
               </select>
             </div>
             <div>
+              <label for="ocrLang">Idioma OCR</label>
+              <select id="ocrLang">
+                <option value="spa" selected>Español</option>
+                <option value="eng">English</option>
+                <option value="por">Português</option>
+                <option value="fra">Français</option>
+                <option value="deu">Deutsch</option>
+                <option value="spa+eng">Español + English</option>
+              </select>
+            </div>
+            <div>
               <label for="imageMode">Imágenes / diagramas</label>
               <select id="imageMode">
                 <option value="auto" selected>Auto</option>
@@ -236,7 +521,7 @@
               <label for="tableMode">Detección de tablas</label>
               <select id="tableMode">
                 <option value="auto" selected>Auto</option>
-                <option value="header">Debut tablas como Markdown</option>
+                <option value="header">Tablas como Markdown</option>
                 <option value="raw">Texto sin tabla</option>
               </select>
             </div>
@@ -254,35 +539,52 @@
           <div class="grid-3">
             <div>
               <label>Páginas</label>
-              <div id="pageCount" style="padding:.85rem 1rem;border-radius:14px;background:#f8fafc;border:1px solid #d1d5db;">-</div>
+              <div id="pageCount" class="info-box">-</div>
             </div>
             <div>
               <label>OCR activo</label>
-              <div id="ocrStatus" style="padding:.85rem 1rem;border-radius:14px;background:#f8fafc;border:1px solid #d1d5db;">-</div>
+              <div id="ocrStatus" class="info-box">-</div>
             </div>
             <div>
               <label>Tiempo</label>
-              <div id="duration" style="padding:.85rem 1rem;border-radius:14px;background:#f8fafc;border:1px solid #d1d5db;">-</div>
+              <div id="duration" class="info-box">-</div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- Result Card -->
     <section class="card">
       <p class="panel-title">Markdown generado</p>
-      <textarea id="resultMarkdown" placeholder="El Markdown generado aparecerá aquí..." readonly></textarea>
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" id="tabCode" role="tab" aria-selected="true" data-tab="code">Código Markdown</button>
+        <button class="tab-btn" id="tabPreview" role="tab" aria-selected="false" data-tab="preview">Vista previa</button>
+      </div>
+      <div id="panelCode" class="tab-panel active">
+        <textarea id="resultMarkdown" placeholder="El Markdown generado aparecerá aquí..." readonly></textarea>
+      </div>
+      <div id="panelPreview" class="tab-panel">
+        <div id="previewContent" class="preview-panel">
+          <div class="preview-empty">La vista previa aparecerá después de convertir un PDF.</div>
+        </div>
+      </div>
       <div class="button-group">
-        <button id="downloadButton" disabled>Descargar Markdown</button>
-        <button id="copyButton" disabled>Copiar al portapapeles</button>
+        <button id="downloadButton" disabled>⬇ Descargar .md</button>
+        <button id="copyButton" disabled>📋 Copiar al portapapeles</button>
       </div>
       <p class="helper">El documento generado incluye encabezados, listas, tablas Markdown simples y texto OCR cuando se detectan páginas escaneadas.</p>
     </section>
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.113/pdf.min.js"></script>
-  <script src="https://unpkg.com/tesseract.js@4.1.3/dist/tesseract.min.js"></script>
+  <footer>
+    <p>PDF2MD AI — Conversión 100% local en tu navegador. Ningún archivo se envía a servidores externos.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.113/pdf.min.js" onerror="console.warn('pdf.js CDN failed, trying fallback...');this.src='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.10.113/build/pdf.min.js'"></script>
+  <script src="https://unpkg.com/tesseract.js@4.1.3/dist/tesseract.min.js" onerror="console.warn('Tesseract CDN failed, trying fallback...');this.src='https://cdn.jsdelivr.net/npm/tesseract.js@4.1.3/dist/tesseract.min.js'"></script>
   <script>
+    /* ===== DOM References ===== */
     const pdfFile = document.getElementById('pdfFile');
     const convertButton = document.getElementById('convertButton');
     const downloadButton = document.getElementById('downloadButton');
@@ -295,19 +597,75 @@
     const ocrStatus = document.getElementById('ocrStatus');
     const duration = document.getElementById('duration');
     const ocrModeSelect = document.getElementById('ocrMode');
+    const ocrLangSelect = document.getElementById('ocrLang');
     const imageModeSelect = document.getElementById('imageMode');
     const tableModeSelect = document.getElementById('tableMode');
     const fileProgressBar = document.getElementById('fileProgressBar');
     const fileLoadWrapper = document.getElementById('fileLoadWrapper');
     const fileStatusText = document.getElementById('fileStatusText');
+    const previewContent = document.getElementById('previewContent');
+    const themeToggle = document.getElementById('themeToggle');
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.113/pdf.worker.min.js';
+    /* Configure pdf.js worker — deferred to avoid crash if CDN is slow */
+    function ensurePdfJs() {
+      if (typeof pdfjsLib === 'undefined') {
+        throw new Error('pdf.js no se ha cargado. Verifique su conexión a internet y recargue la página.');
+      }
+      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.113/pdf.worker.min.js';
+      }
+    }
+    // Try to configure immediately if available, but don't crash if not
+    try { ensurePdfJs(); } catch(e) { console.warn('pdf.js will be configured on first use:', e.message); }
 
     let currentPdfFile = null;
     let currentPdfBuffer = null;
     let ocrWorker = null;
     let ocrWorkerInitialized = false;
+    let currentOcrLang = null;
 
+    /* ===== Theme Toggle ===== */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('pdf2md-theme', theme);
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('pdf2md-theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyTheme(savedTheme);
+
+    /* ===== Tabs ===== */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        const target = btn.getAttribute('data-tab');
+        document.getElementById(target === 'code' ? 'panelCode' : 'panelPreview').classList.add('active');
+        if (target === 'preview') {
+          updatePreview();
+        }
+      });
+    });
+
+    function updatePreview() {
+      const md = resultMarkdown.value;
+      if (!md.trim()) {
+        previewContent.innerHTML = '<div class="preview-empty">La vista previa aparecerá después de convertir un PDF.</div>';
+        return;
+      }
+      previewContent.innerHTML = renderMarkdownToHtml(md);
+    }
+
+    /* ===== File handling ===== */
     pdfFile.addEventListener('change', handleFileSelection);
     pdfFile.addEventListener('input', handleFileSelection);
 
@@ -357,6 +715,7 @@
       statusText.textContent = currentPdfFile ? `Archivo listo: ${currentPdfFile.name}` : 'Elija un PDF para comenzar.';
     }
 
+    /* ===== Convert ===== */
     convertButton.addEventListener('click', async () => {
       if (!currentPdfFile) return;
       convertButton.disabled = true;
@@ -374,6 +733,7 @@
         downloadButton.disabled = !markdown;
         copyButton.disabled = !markdown;
         statusText.textContent = 'Conversión completada con éxito.';
+        updatePreview();
       } catch (error) {
         console.error(error);
         statusText.textContent = `Error: ${error.message || 'No se pudo convertir el PDF.'}`;
@@ -385,6 +745,7 @@
       }
     });
 
+    /* ===== Download & Copy ===== */
     downloadButton.addEventListener('click', () => {
       const content = resultMarkdown.value;
       if (!content) return;
@@ -402,11 +763,20 @@
     copyButton.addEventListener('click', async () => {
       const content = resultMarkdown.value;
       if (!content) return;
-      await navigator.clipboard.writeText(content);
-      statusText.textContent = 'Markdown copiado al portapapeles.';
+      try {
+        await navigator.clipboard.writeText(content);
+        const originalText = copyButton.textContent;
+        copyButton.textContent = '✅ Copiado!';
+        setTimeout(() => { copyButton.textContent = originalText; }, 2000);
+      } catch {
+        statusText.textContent = 'No se pudo copiar. Intenta seleccionar el texto manualmente.';
+      }
     });
 
+    /* ===== PDF Conversion Pipeline ===== */
     async function convertPdfToMarkdown(file) {
+      // Ensure pdf.js is available before conversion
+      ensurePdfJs();
       const arrayBuffer = currentPdfBuffer || await readFileAsArrayBuffer(file, progress => {
         fileLoadWrapper.hidden = false;
         fileProgressBar.style.width = `${progress}%`;
@@ -441,7 +811,7 @@
       }
 
       progressBar.style.width = '100%';
-      return pageMarkdowns.join('\n\n');
+      return pageMarkdowns.join('\n\n---\n\n');
     }
 
     function readFileAsArrayBuffer(file, onProgress) {
@@ -462,31 +832,44 @@
       });
     }
 
+    /* ===== OCR Worker (Tesseract.js v4 API) ===== */
     async function initOcrWorker() {
+      const lang = ocrLangSelect.value || 'spa';
+
+      // If language changed, terminate existing worker and reinitialize
+      if (ocrWorkerInitialized && currentOcrLang !== lang) {
+        try { await ocrWorker.terminate(); } catch (e) { /* ignore */ }
+        ocrWorkerInitialized = false;
+        ocrWorker = null;
+      }
+
       if (ocrWorkerInitialized) return;
-      ocrWorker = Tesseract.createWorker({
+
+      statusText.textContent = `Inicializando OCR (${lang})...`;
+      // Tesseract.js v4 API: createWorker returns a promise directly
+      ocrWorker = await Tesseract.createWorker(lang, 1, {
         logger: m => {
           if (m.status === 'recognizing text') {
             statusText.textContent = `OCR en progreso: ${Math.round(m.progress * 100)}%`;
           }
         }
       });
-      await ocrWorker.load();
-      await ocrWorker.loadLanguage('spa');
-      await ocrWorker.initialize('spa');
+      currentOcrLang = lang;
       ocrWorkerInitialized = true;
     }
 
+    /* ===== Page Processing ===== */
     async function processPage(page, pageNumber, ocrMode, imageMode, tableMode) {
       const textContent = await page.getTextContent({ normalizeWhitespace: true });
       const pageText = extractTextFromContent(textContent);
       const annotations = await page.getAnnotations({ intent: 'display' });
 
-      const pdfImageData = imageMode !== 'none' ? await renderPageImage(page, 1.2) : null;
+      const pdfImageData = imageMode !== 'none' ? await renderPageImage(page, 1.5) : null;
       const useOcr = shouldUseOcr(pageText, ocrMode);
       let markdown = '';
 
       if (useOcr) {
+        ocrStatus.textContent = 'Activo';
         const ocrText = await runOcrOnPage(page, pageNumber, pdfImageData);
         markdown = buildMarkdownFromText(ocrText, annotations, tableMode, true);
       } else {
@@ -494,7 +877,7 @@
       }
 
       if (imageMode === 'embed' && pdfImageData) {
-        markdown += `\n\n![Página ${pageNumber}]( ${pdfImageData} )\n`;
+        markdown += `\n\n![Página ${pageNumber}](${pdfImageData})\n`;
       }
 
       return { markdown };
@@ -536,6 +919,7 @@
     function shouldUseOcr(text, mode) {
       if (mode === 'never') return false;
       if (mode === 'always') return true;
+      // Auto: use OCR if extracted text is very short (likely scanned page)
       return text.trim().length < 100;
     }
 
@@ -544,7 +928,7 @@
         await initOcrWorker();
       }
       if (!pageImageData) {
-        pageImageData = await renderPageImage(page, 1.2);
+        pageImageData = await renderPageImage(page, 1.5);
       }
       const response = await ocrWorker.recognize(pageImageData);
       const ocrText = response.data.text || '';
@@ -562,11 +946,12 @@
       return canvas.toDataURL('image/png');
     }
 
+    /* ===== Markdown Builder ===== */
     function buildMarkdownFromText(rawText, annotations, tableMode, isOcr) {
       const lines = rawText
         .split(/\r?\n/)
         .map(line => line.replace(/\u00A0/g, ' ').trim())
-        .filter((line, index, array) => {
+        .filter((line) => {
           if (!line) return false;
           if (line.startsWith('Page ') && /^Page\s+\d+/i.test(line)) return false;
           return true;
@@ -576,7 +961,6 @@
       let accumulated = [];
       let lastWasTable = false;
       let lastWasList = false;
-
       const tableRows = [];
 
       const addParagraph = () => {
@@ -667,17 +1051,21 @@
       return blocks.map(block => renderBlock(block)).join('\n\n').trim() + '\n';
     }
 
+    /* ===== Parsers (improved) ===== */
     function parseHeading(line) {
       const trimmed = line.trim();
       if (trimmed.length < 4) return null;
+      // All-caps lines as H2
       if (/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\-]{3,}$/.test(trimmed) && trimmed === trimmed.toUpperCase()) {
         return { text: trimmed, level: 2 };
       }
-      if (/^(Capítulo|Sección|Artículo|Resumen|Introducción|Conclusión|Conclusiones|Objetivo|Objetivos|Métodos?)\b/i.test(trimmed)) {
+      // Common section keywords
+      if (/^(Capítulo|Sección|Artículo|Resumen|Introducción|Conclusión|Conclusiones|Objetivo|Objetivos|Métodos?|Anexo|Bibliografía|Referencias|Apéndice)\b/i.test(trimmed)) {
         return { text: trimmed, level: 2 };
       }
-      if (/^\d+(\.|\))\s+/.test(trimmed) && trimmed.split(' ').length <= 8) {
-        return { text: trimmed.replace(/^\d+(\.|\))\s+/, '').trim(), level: 3 };
+      // Numbered sections (e.g., "1. Title" or "1) Title") with max 8 words
+      if (/^\d+(\.|)\)\s+/.test(trimmed) && trimmed.split(' ').length <= 8) {
+        return { text: trimmed.replace(/^\d+(\.|)\)\s+/, '').trim(), level: 3 };
       }
       return null;
     }
@@ -689,24 +1077,40 @@
     }
 
     function parseCodeLine(line) {
-      if (/^\s{3,}|^\t/.test(line)) {
-        return line.replace(/\t/g, '    ');
+      // Require significant indentation (6+ spaces or 2+ tabs) to avoid
+      // false positives from normal PDF margins
+      if (/^\s{6,}/.test(line) || /^\t{2,}/.test(line)) {
+        const trimmed = line.replace(/\t/g, '    ');
+        // Only classify as code if it contains programming-like characters
+        if (/[{};=<>()[\]]/.test(trimmed) || /^\s*(\/\/|#|\/\*)/.test(trimmed)) {
+          return trimmed;
+        }
       }
-      const codeHint = /\b(function|var|let|const|if|else|for|while|return|class|def|import|export|public|private|const|printf|console\.log)\b/;
-      if (codeHint.test(line) && line.length < 130 && /[{};=<>]/.test(line)) {
+      // Require at least 2 different code indicators + syntax characters
+      const codeKeywords = /\b(function|var|let|const|if|else|for|while|return|class|def|import|export|printf|console\.log|async|await|try|catch)\b/g;
+      const matches = line.match(codeKeywords);
+      if (matches && matches.length >= 2 && line.length < 130 && /[{};=<>()]/.test(line)) {
         return line;
       }
       return null;
     }
 
     function parseTableLine(line) {
-      const altSplit = line.split(/\s{2,}/).map(part => part.trim()).filter(Boolean);
-      if (altSplit.length >= 2 && altSplit.length <= 15 && line.length > 20) {
-        return altSplit;
-      }
+      // First: try pipe-delimited (strongest signal)
       const pipeSplit = line.split('|').map(part => part.trim()).filter(Boolean);
       if (pipeSplit.length >= 2) {
         return pipeSplit;
+      }
+      // Second: try space-delimited, but require 3+ columns and reasonable column lengths
+      const altSplit = line.split(/\s{3,}/).map(part => part.trim()).filter(Boolean);
+      if (altSplit.length >= 3 && altSplit.length <= 12 && line.length > 25) {
+        // Verify columns have somewhat consistent lengths (table heuristic)
+        const avgLen = altSplit.reduce((s, c) => s + c.length, 0) / altSplit.length;
+        const variance = altSplit.reduce((s, c) => s + Math.pow(c.length - avgLen, 2), 0) / altSplit.length;
+        // If variance is extremely high, it's probably not a table
+        if (variance < avgLen * avgLen * 4) {
+          return altSplit;
+        }
       }
       return null;
     }
@@ -724,7 +1128,7 @@
         case 'heading':
           return '#'.repeat(Math.min(block.level, 3)) + ' ' + block.text;
         case 'list':
-          return block.items.map(item => item).join('\n');
+          return block.items.join('\n');
         case 'table':
           return renderTable(block.rows);
         case 'code':
@@ -746,15 +1150,79 @@
       const header = normalized[0];
       const separator = header.map(() => '---');
       const body = normalized.slice(1);
-      const lines = [ `| ${header.join(' | ')} |`, `| ${separator.join(' | ')} |` ];
+      const lines = [`| ${header.join(' | ')} |`, `| ${separator.join(' | ')} |`];
       body.forEach(row => lines.push(`| ${row.join(' | ')} |`));
       return lines.join('\n');
     }
 
     function inlineLinks(text) {
-      return text
-        .replace(/(https?:\/\/[\w\-./?=#%&+;:@~]+)(?![^<]*>)/g, '[$1]($1)')
-        .replace(/\[\s*([^\]]+)\s*\](\()*/g, (match, text, open) => (open ? match : `**${text}**`));
+      // Only convert bare URLs to Markdown links; don't break existing Markdown syntax
+      return text.replace(/(https?:\/\/[\w\-./?=#%&+;:@~]+)/g, (match) => {
+        return `[${match}](${match})`;
+      });
+    }
+
+    /* ===== Simple Markdown → HTML renderer (for preview) ===== */
+    function renderMarkdownToHtml(md) {
+      let html = escapeHtml(md);
+
+      // Horizontal rules
+      html = html.replace(/^---$/gm, '<hr>');
+
+      // Code blocks (fenced)
+      html = html.replace(/```([\s\S]*?)```/g, (_, code) => {
+        return `<pre><code>${code.trim()}</code></pre>`;
+      });
+
+      // Headers
+      html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+      html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+      html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+      // Bold and italic
+      html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+      // Images
+      html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
+
+      // Links
+      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+      // Blockquotes
+      html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+      // Unordered list items
+      html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+      // Tables
+      html = html.replace(/(\|.+\|\n\|[\s\-|]+\|\n(?:\|.+\|\n?)*)/g, (tableBlock) => {
+        const rows = tableBlock.trim().split('\n').filter(r => !/^\|[\s\-|]+\|$/.test(r));
+        if (rows.length === 0) return tableBlock;
+        const parseRow = (row, tag) => {
+          const cells = row.split('|').filter((_, i, a) => i > 0 && i < a.length - 1).map(c => c.trim());
+          return `<tr>${cells.map(c => `<${tag}>${c}</${tag}>`).join('')}</tr>`;
+        };
+        const headerHtml = parseRow(rows[0], 'th');
+        const bodyHtml = rows.slice(1).map(r => parseRow(r, 'td')).join('');
+        return `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+      });
+
+      // Paragraphs: wrap remaining loose lines
+      html = html.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return '';
+        if (/^<(h[1-6]|ul|ol|li|pre|table|thead|tbody|tr|th|td|blockquote|hr|img|div)/.test(trimmed)) return trimmed;
+        return `<p>${trimmed}</p>`;
+      }).join('\n');
+
+      return html;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
   </script>
 </body>
