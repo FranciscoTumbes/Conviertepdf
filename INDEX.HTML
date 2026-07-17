@@ -680,6 +680,14 @@
         if (!looksLikePdf) {
           statusText.textContent = 'El archivo seleccionado no es un PDF válido.';
           currentPdfFile = null;
+          resultMarkdown.value = '';
+          downloadButton.disabled = true;
+          copyButton.disabled = true;
+          duration.textContent = '-';
+          fileLoadWrapper.hidden = true;
+          currentPdfBuffer = null;
+          convertButton.disabled = true;
+          return;
         }
       }
 
@@ -717,7 +725,10 @@
 
     /* ===== Convert ===== */
     convertButton.addEventListener('click', async () => {
-      if (!currentPdfFile) return;
+      if (!currentPdfFile) {
+        statusText.textContent = 'Selecciona un PDF válido antes de convertir.';
+        return;
+      }
       convertButton.disabled = true;
       statusText.textContent = 'Iniciando conversión...';
       progressWrap.hidden = false;
