@@ -581,9 +581,64 @@
     <p>PDF2MD AI — Conversión 100% local en tu navegador. Ningún archivo se envía a servidores externos.</p>
   </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.113/pdf.min.js" onerror="console.warn('pdf.js CDN failed, trying fallback...');this.src='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.10.113/build/pdf.min.js'"></script>
   <script src="https://unpkg.com/tesseract.js@4.1.3/dist/tesseract.min.js" onerror="console.warn('Tesseract CDN failed, trying fallback...');this.src='https://cdn.jsdelivr.net/npm/tesseract.js@4.1.3/dist/tesseract.min.js'"></script>
   <script>
+    /* ===== PDF.js Loader (ES Module via dynamic import) ===== */
+    let pdfjsLib = null;
+
+    const pdfJsLoadPromise = loadPdfJsModule();
+
+    async function loadPdfJsModule() {
+      const sources = [
+        {
+          module: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.1.200/pdf.min.mjs',
+          worker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.1.200/pdf.worker.min.mjs'
+        },
+        {
+          module: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.min.mjs',
+          worker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.worker.min.mjs'
+        },
+        {
+          module: 'https://unpkg.com/pdfjs-dist@6.1.200/build/pdf.min.mjs',
+          worker: 'https://unpkg.com/pdfjs-dist@6.1.200/build/pdf.worker.min.mjs'
+        },
+        {
+          module: 'static/js/pdf.min.mjs',
+          worker: 'static/js/pdf.worker.min.mjs'
+        }
+      ];
+
+      for (const source of sources) {
+        try {
+          const module = await Promise.race([
+            import(source.module),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Timeout')), 8000)
+            )
+          ]);
+          // The ES module exports pdf.js API directly (getDocument, GlobalWorkerOptions, etc.)
+          pdfjsLib = module;
+          if (pdfjsLib.GlobalWorkerOptions) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = source.worker;
+          }
+          console.info(`pdf.js cargado exitosamente desde: ${source.module}`);
+          return;
+        } catch (err) {
+          console.warn(`pdf.js import failed from ${source.module}:`, err.message);
+        }
+      }
+      throw new Error('No se pudo cargar pdf.js desde los CDNs ni desde el recurso local.');
+    }
+
+    async function ensurePdfJs() {
+      statusText.textContent = 'Cargando librería pdf.js...';
+      await pdfJsLoadPromise;
+      if (!pdfjsLib || typeof pdfjsLib.getDocument !== 'function') {
+        throw new Error('pdf.js no se ha cargado correctamente. Verifique su conexión a internet y recargue la página.');
+      }
+    }
+    pdfJsLoadPromise.catch(e => console.warn('pdf.js will be configured on first use:', e.message));
+
     /* ===== DOM References ===== */
     const pdfFile = document.getElementById('pdfFile');
     const convertButton = document.getElementById('convertButton');
@@ -607,16 +662,7 @@
     const themeToggle = document.getElementById('themeToggle');
 
     /* Configure pdf.js worker — deferred to avoid crash if CDN is slow */
-    function ensurePdfJs() {
-      if (typeof pdfjsLib === 'undefined') {
-        throw new Error('pdf.js no se ha cargado. Verifique su conexión a internet y recargue la página.');
-      }
-      if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.113/pdf.worker.min.js';
-      }
-    }
-    // Try to configure immediately if available, but don't crash if not
-    try { ensurePdfJs(); } catch(e) { console.warn('pdf.js will be configured on first use:', e.message); }
+    // Initial loading is handled by pdfJsLoadPromise.
 
     let currentPdfFile = null;
     let currentPdfBuffer = null;
@@ -787,7 +833,7 @@
     /* ===== PDF Conversion Pipeline ===== */
     async function convertPdfToMarkdown(file) {
       // Ensure pdf.js is available before conversion
-      ensurePdfJs();
+      await ensurePdfJs();
       const arrayBuffer = currentPdfBuffer || await readFileAsArrayBuffer(file, progress => {
         fileLoadWrapper.hidden = false;
         fileProgressBar.style.width = `${progress}%`;
